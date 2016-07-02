@@ -52,7 +52,7 @@ class BarrandovContentProvider(ContentProvider):
 
     def list(self, url):
         result = []
-        elif url.startswith('#new#'):
+        if url.startswith('#new#'):
             url = 'video/?stanice=1'
         
         tree = util.parse_html(self._url(url))
