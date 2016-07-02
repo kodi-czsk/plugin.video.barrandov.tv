@@ -52,42 +52,29 @@ class BarrandovContentProvider(ContentProvider):
 
     def list(self, url):
         result = []
-        if url.startswith('#top#'):
-            url = 'video/vypis/nejsledovanejsi-videa/'
         elif url.startswith('#new#'):
-            url = 'video/vypis/nejnovejsi-videa/'
-            
-        page = util.request(self._url(url))
-        page = util.substr(page, LISTING_START, LISTING_END)
-        for m in re.finditer(LISTING_ITER_RE, page, re.DOTALL | re.IGNORECASE):
+            url = 'video/?stanice=1'
+        
+        tree = util.parse_html(self._url(url))
+        for m in tree.find('h1',text=re.compile(r'Nejn.*')).parent.select('.grid div .box.box-video'):
             # skip payed content
-            if m.group('playimg').find(YELLOW_IMG) != -1:
+            if 'box-video--premium' in m['class']:
                 continue
-            date_m = re.search('(\d{1,2})\.(\d{1,2})\.(\d{4})', m.group('desc'))
-            day = len(date_m.group(1)) > 1 and date_m.group(1)[0] == '0' and date_m.group(1)[1] or date_m.group(1)
-            month = len(date_m.group(2)) > 1 and date_m.group(2)[0] == '0' and date_m.group(2)[1]  or date_m.group(2)
-            year = date_m.group(3)
-            date = '%s.%s.%s' % (day, month, year)
-            title = "%s %s" % (m.group('title'), date) if m.group('title').find(date) == -1 else m.group('title')
-            
             item = self.video_item()
-            item['title'] = "%s %s" % (title, date) if title. find(date) == -1 else title
-            item['url'] = self._url(m.group('url'))
-            item['img'] = self._url(m.group('img'))
-            self._filter(result, item)
+            item['title']=m.div.img['title']
+            item['title']+=' '+m.p.text
+            item['url']=self._url(m.parent['href'])
+            item['img']=self._url(m.div.img['src'])
+            result.append(item)
 
-        pager_m = re.search(PAGER_RE, page, re.DOTALL)
+        pager_m = tree.find('a',attrs='next')
         if pager_m:
             item = self.dir_item()
             item['type'] = 'next'
-            next_url = pager_m.group('nexturl')
-            idx = url.find('?')
-            if idx != -1:
-                next_url = url[:idx] + next_url
-            else:
-                next_url = url + next_url
-            item['url'] = next_url
+            idx = pager_m['href']
+            item['url'] = 'http://www.barrandov.tv/video/'+idx
             result.append(item)
+
         return result
     
     def categories(self):
@@ -95,10 +82,6 @@ class BarrandovContentProvider(ContentProvider):
         item = self.dir_item()
         item['type'] = 'new'
         item['url'] = "#new#"
-        result.append(item)
-        item = self.dir_item()
-        item['type'] = 'top'
-        item['url'] = "#top#"
         result.append(item)
         return result + self._fill_categories()
 
