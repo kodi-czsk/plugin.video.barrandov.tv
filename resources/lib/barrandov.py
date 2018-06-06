@@ -37,7 +37,7 @@ LISTING_START = '<div class="block video show-archive">'
 LISTING_END = '<div id="right-menu">'
 LISTING_ITER_RE = '<div class=\"item.*?\">.+?<a href=\"(?P<url>[^"]+)\">(?P<title>[^<]+)<.+?<p class=\"desc\">(?P<desc>[^<]+)</p>.+?<img src=\"(?P<img>[^\"]+)\".+?<span class=\"play\"><img src=\"(?P<playimg>[^\"]+)\".+?</div>'
 PAGER_RE = '<span class=\"pages">(?P<actpage>[0-9]+)/(?P<totalpage>[0-9]+)</span>.*?<a href=\"(?P<nexturl>[^"]+)'
-VIDEOLINK_ITER_RE = 'file:.*?\"(?P<url>[^"]+)".+?label:.*?\"(?P<quality>[^"]+)\"'
+VIDEOLINK_ITER_RE = 'source src="(?P<url>[^"]+)".+?label=.*? res="(?P<quality>[^"]+)"'
 YELLOW_IMG = 'video-play-yellow'
 
 class BarrandovContentProvider(ContentProvider):
@@ -129,7 +129,6 @@ class BarrandovContentProvider(ContentProvider):
         result = []
         item = item.copy()
         data = util.request(self._url(item['url']))
-    
         for m in re.finditer(VIDEOLINK_ITER_RE, data, re.DOTALL | re.IGNORECASE):
             item = self.video_item()
             item['url' ]= self._url(m.group('url'))
